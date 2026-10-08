@@ -1,0 +1,8 @@
+# sample password policy
+# example ->Abcd1 and Pava1
+
+minLength 5
+maxLength 5
+requireUpper true
+requireLower true
+requireDigit true

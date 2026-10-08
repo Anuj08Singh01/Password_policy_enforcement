@@ -1,0 +1,120 @@
+# ==========================================
+# POLICY COMPILER - THE MASTER TEST SUITE
+# ==========================================
+# This file contains EVERY test case for all features of our compiler.
+# Note: Because the compiler halts before IR Generation if there are 
+# syntax/semantic errors, you must comment out Tests 4-8 below 
+# if you want to see the IR Analysis Warnings of Tests 1-3.
+
+# ------------------------------------------
+# test 01: Lexical Error & Panic Mode Recovery
+# ------------------------------------------
+# The compiler encounters an invalid character, recovers to the next newline, 
+# and continues parsing rather than dying immediately!
+@invalidToken
+
+# ------------------------------------------
+# test 02: Whitespace & Empty Line Tolerance (Lexical Phase)
+# ------------------------------------------
+# Our Lexer is extremely robust and ignores multiple spaces, raw tabs, 
+# and empty lines gracefully without throwing tokens to the parser.
+# UNCOMMENT to test (it will compile fine if tests 4-8 are commented):
+# requireDigit        true
+
+
+
+
+# ------------------------------------------
+# test 03: Type Checking (Syntax Analysis)
+# ------------------------------------------
+# 'requireUpper' strictly expects a Boolean (true/false) instead of a string.
+requireUpper maybe
+minLength abc
+
+# ------------------------------------------
+# test 04: Incomplete Rule Definition (Syntax Phase)
+# ------------------------------------------
+# The Syntax grammar enforces <RuleName> <Value>. If a rule name is 
+# given without a value or newline terminates early, the parser catches it.
+# UNCOMMENT to test parser missing value exception:
+# requireLower
+
+
+
+
+# ------------------------------------------
+# test 05: Logical Conflict Check
+# ------------------------------------------
+# The compiler verifies that minLength cannot be greater than maxLength.
+minLength 20
+maxLength 10
+
+# ------------------------------------------
+# test 06: Duplicate Rule Detection
+# ------------------------------------------
+# Defining the same length constraint twice is a semantic error.
+minLength 8
+
+# ------------------------------------------
+# test 07: Typo Correction & "Did you mean?" 
+# ------------------------------------------
+# The Semantic Analyzer will calculate Levenshtein distance for typos.
+reqiureUpper false
+mxLength 30
+noSpace true
+
+# ------------------------------------------
+# test 08: Severe Unknown Rule Rejection (Semantic Phase)
+# ------------------------------------------
+# If a keyword is completely unrecognized and too far for the "Did you mean?" 
+# typo correction to confidently suggest a fix, the compiler safely abandons it.
+# UNCOMMENT to test fallback rejection:
+# completelyUnknownPolicyRule true
+
+# ------------------------------------------
+# test 09: Keyword Case-Sensitivity (Semantic Typo Phase)
+# ------------------------------------------
+# Because keywords are Case-Sensitive, capitalization mistakes are easily 
+# caught. The Typo Suggester algorithms bridge this human-error gap!
+# UNCOMMENT to see case-sensitive typo flagging:
+# REQUIREUPPER false
+
+
+
+
+# ------------------------------------------
+# test 10: IR Warning - "Fixed Length"
+# ------------------------------------------
+# This is semantically valid, but the IR Analyzer warns about fixed length.
+# minLength 15
+# maxLength 15
+
+# ------------------------------------------
+# test 11: IR Warning - "Weak policy"
+# ------------------------------------------
+# This is valid, but the IR Analyzer warns that it's too weak.
+# minLength 4
+
+# ------------------------------------------
+# test 12: Valid Policy (IR "Strong Policy" info)
+# ------------------------------------------
+# A perfectly valid, strong password policy.
+minLength 12
+maxLength 64
+requireUpper true
+requireLower true
+requireDigit true
+requireSpecial true
+noSpaces true
+
+
+# ------------------------------------------
+# test 13: Neuro-Symbolic Evaluator Runtime (Target Phase)
+# ------------------------------------------
+# Note: This is NOT a compiler rule, but a feature of the final binary!
+# Once you successfully compile this file, the resulting C++ application 
+# executes "Neuro-Symbolic Evaluation" on your password. 
+# It runs extra checks NOT defined here, such as:
+#  - Sequential Pattern detection (e.g., disqualifying "abc" or "123")
+#  - Repetitive Character penalties (e.g., "aaa")
+#  - Blocklist dictionary checks (rejecting "password", "admin").

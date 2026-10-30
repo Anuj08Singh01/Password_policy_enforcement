@@ -50,29 +50,13 @@ public:
         }
 
         // --- COMPILED CONSTRAINTS INJECTION ---
-        if (password.length() < 14) {
+        if (password.length() < 8) {
             result.isValid = false;
-            result.errors.push_back("[REJECTED] Password is too short. Minimum length is 14.");
-        }
-        if (upperCount == 0) {
-            result.isValid = false;
-            result.errors.push_back("[REJECTED] Missing uppercase letter (A-Z).");
-        }
-        if (lowerCount == 0) {
-            result.isValid = false;
-            result.errors.push_back("[REJECTED] Missing lowercase letter (a-z).");
+            result.errors.push_back("[REJECTED] Password is too short. Minimum length is 8.");
         }
         if (digitCount == 0) {
             result.isValid = false;
             result.errors.push_back("[REJECTED] Missing numeric digit (0-9).");
-        }
-        if (specialCount == 0) {
-            result.isValid = false;
-            result.errors.push_back("[REJECTED] Missing special character (!@#...).");
-        }
-        if (spaceCount > 0) {
-            result.isValid = false;
-            result.errors.push_back("[REJECTED] Password contains illegal whitespace characters.");
         }
         // --------------------------------------
 
@@ -106,5 +90,6 @@ int main() {
     else if (res.entropyScore > 60.0) std::cout << "Strength: STRONG\n";
     else if (res.entropyScore > 40.0) std::cout << "Strength: MODERATE\n";
     else std::cout << "Strength: WEAK\n";
+
     return 0;
 }

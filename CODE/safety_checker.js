@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
+const { compilePolicy } = require('./compiler_engine');
 
 const VALID_KEYWORDS = new Set([
   'minLength',
@@ -161,50 +162,30 @@ class SafetyChecker {
 
   /**
    * 5. OUTPUT CHECK: Compiler-in-the-Loop Dry Run Verification
-   * Executes the actual C++ policy compiler in dry-run mode against the AI's proposal.
+   * Executes the actual policy compiler in dry-run mode against the AI's proposal.
    */
   static async compilerDryRun(compilerExePath, dslText) {
-    const tempFile = path.join(__dirname, `temp_dryrun_${Date.now()}_${Math.floor(Math.random() * 1000)}.txt`);
-
     try {
-      await fs.promises.writeFile(tempFile, dslText, 'utf8');
-
-      return await new Promise((resolve) => {
-        execFile(compilerExePath, [tempFile, '--json', '--dry-run'], { timeout: 4000 }, (err, stdout, stderr) => {
-          // Cleanup temp file safely
-          fs.unlink(tempFile, () => {});
-
-          try {
-            const parsed = JSON.parse(stdout.trim());
-            if (parsed.success) {
-              resolve({
-                verified: true,
-                stage: parsed.stage,
-                constraints: parsed.constraints,
-                warnings: parsed.warnings || [],
-                errors: []
-              });
-            } else {
-              resolve({
-                verified: false,
-                stage: parsed.stage,
-                errors: parsed.errors || [{ message: 'Compiler rejected policy' }]
-              });
-            }
-          } catch (jsonErr) {
-            resolve({
-              verified: false,
-              stage: 'compiler_execution',
-              errors: [{ message: `Compiler output could not be parsed: ${stdout || stderr || err?.message}` }]
-            });
-          }
-        });
-      });
+      const res = compilePolicy(dslText);
+      if (res.success) {
+        return {
+          verified: true,
+          stage: res.stage,
+          constraints: res.constraints,
+          warnings: res.warnings || [],
+          errors: []
+        };
+      } else {
+        return {
+          verified: false,
+          stage: res.stage,
+          errors: res.errors || [{ message: 'Compiler rejected policy' }]
+        };
+      }
     } catch (e) {
-      try { await fs.promises.unlink(tempFile); } catch (_) {}
       return {
         verified: false,
-        stage: 'io',
+        stage: 'engine',
         errors: [{ message: `Dry run execution error: ${e.message}` }]
       };
     }

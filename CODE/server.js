@@ -32,6 +32,11 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50kb' })); // Payload size safety check
 app.use(express.static(__dirname));
 
+// Serve IDE at root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'policy_compiler.html'));
+});
+
 /**
  * Health & Capabilities Endpoint
  */
@@ -71,34 +76,16 @@ app.post('/api/compile', async (req, res) => {
     return res.status(400).json({ success: false, message: sizeCheck.error });
   }
 
-  const tempFile = path.join(__dirname, `temp_run_${Date.now()}_${Math.floor(Math.random() * 1000)}.txt`);
   try {
-    await fs.promises.writeFile(tempFile, policyDsl, 'utf8');
-
-    const args = [tempFile, '--json'];
-    if (password && typeof password === 'string') {
-      args.push('--password', password);
-    } else {
-      args.push('--check');
-    }
-
-    execFile(COMPILER_EXE, args, { timeout: 5000 }, (err, stdout, stderr) => {
-      fs.unlink(tempFile, () => {});
-
-      try {
-        const result = JSON.parse(stdout.trim());
-        res.json(result);
-      } catch (parseErr) {
-        res.status(500).json({
-          success: false,
-          stage: 'compiler_runtime',
-          errors: [{ message: `Failed to parse compiler output: ${stdout || stderr || err?.message}` }]
-        });
-      }
+    const { compilePolicy } = require('./compiler_engine');
+    const result = compilePolicy(policyDsl, (password && typeof password === 'string') ? password : null);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      stage: 'compiler_engine',
+      errors: [{ message: err.message }]
     });
-  } catch (ioErr) {
-    try { await fs.promises.unlink(tempFile); } catch (_) {}
-    res.status(500).json({ success: false, message: ioErr.message });
   }
 });
 
@@ -153,7 +140,12 @@ app.post('/api/ai/synthetic-tests', async (req, res) => {
  * AI FEATURE 4: Explain Compiler Errors
  */
 app.post('/api/ai/explain-error', async (req, res) => {
-  const { errorData, policyDsl } = req.body;
+  const { errorData, policyDsl, passwordFailure } = req.body;
+
+  if (passwordFailure) {
+    const result = await aiService.explainPasswordFailure(passwordFailure, policyDsl || '');
+    return res.json(result);
+  }
 
   if (!errorData) {
     return res.status(400).json({ ok: false, error: 'No error data provided.' });

@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Policy Compiler & AI Security Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: #0f172a;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    padding: 16px;
+    min-height: 100vh;
+  }
+
+  .main-shell {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* SYSTEM HEADER */
+  .system-header {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #f8fafc;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+
+  .sys-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sys-logo {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+  }
+
+  .sys-text h1 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #f8fafc;
+  }
+
+  .sys-text p {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+
+  .sys-badges {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .sys-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sys-badge.green {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #34d399;
+  }
+
+  .sys-badge.purple {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: #6366f1;
+    color: #a5b4fc;
+  }
+
+  .sys-badge.amber {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: #f59e0b;
+    color: #fbbf24;
+  }
+
+  /* WORKSPACE GRID */
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (max-width: 1080px) {
+    .workspace-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* COMPILER CARD (LEFT) */
+  .compiler-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+
+  .topbar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+
+  .badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    transition: all .3s;
+  }
+
+  .badge.idle { color: #3b82f6; background: #eff6ff; border-color: #bfdbfe; }
+  .badge.ok   { color: #059669; background: #ecfdf5; border-color: #a7f3d0; }
+  .badge.err  { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+  .badge.warn { color: #d97706; background: #fffbeb; border-color: #fde68a; }
+
+  .sec {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #475569;
+    padding: 7px 14px 6px;
+    background: #fdfcfb;
+    border-bottom: 1px solid #f1f5f9;
+    border-top: 1px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sec:first-of-type { border-top: none; }
+
+  /* EDITOR */
+  .editor-inner {
+    display: flex;
+    height: 160px;
+  }
+
+  .lnums {
+    width: 36px;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    padding: 12px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #94a3b8;
+    text-align: right;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .lnums span {
+    display: block;
+    padding-right: 8px;
+  }
+
+  textarea#src {
+    flex: 1;
+    background: #ffffff;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #1e293b;
+    padding: 12px;
+    caret-color: #6366f1;
+  }
+
+  .btn-row {
+    padding: 8px 14px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  .btn-primary {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .btn-primary:hover { background: #4f46e5; }
+
+  .btn-sec {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 10px;
+    background: transparent;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .btn-sec:hover { color: #0f172a; background: #f1f5f9; }
+
+  .btn-ex {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 5px 8px;
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .btn-ex:hover { color: #0f172a; background: #f1f5f9; }
+
+  /* PIPELINE */
+  .pipeline-section {
+    padding: 12px 14px;
+    background: #fdfcfb;
+  }
+
+  .stages {
+    display: flex;
+    align-items: center;
+  }
+
+  .stg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .sbub {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 700;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #94a3b8;
+    transition: all .3s;
+  }
+
+  .sbub.active { border-color: #6366f1; background: #eef2ff; color: #6366f1; }
+  .sbub.ok     { border-color: #10b981; background: #ecfdf5; color: #10b981; }
+  .sbub.warn   { border-color: #f59e0b; background: #fffbeb; color: #d97706; }
+  .sbub.err    { border-color: #ef4444; background: #fef2f2; color: #ef4444; }
+
+  .slbl {
+    font-size: 8.5px;
+    letter-spacing: .05em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+    transition: color .3s;
+  }
+
+  .slbl.active { color: #6366f1; font-weight: 600; }
+  .slbl.ok     { color: #059669; }
+  .slbl.err    { color: #dc2626; }
+  .slbl.warn   { color: #d97706; }
+
+  .sarr {
+    font-size: 12px;
+    color: #cbd5e1;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+
+  /* TOKENS */
+  .tok-wrap {
+    padding: 8px 12px;
+    background: #f8fafc;
+    min-height: 40px;
+    max-height: 70px;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ci  { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .cn  { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .cb  { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+  .cnl { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+  .ce  { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
+  .cu  { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+  /* LOG */
+  .log-body {
+    height: 90px;
+    overflow-y: auto;
+    background: #f8fafc;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ll { display: flex; align-items: flex-start; gap: 7px; line-height: 1.5; }
+  .lb { font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+  .lt { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .li { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+  .lo { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .lw { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+  .le { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+  .lm { color: #334155; }
+  .lm.ok  { color: #059669; }
+  .lm.err { color: #dc2626; }
+
+  /* CONSTRAINTS GRID */
+  .cg {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: #e2e8f0;
+    gap: 1px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .cc {
+    background: #ffffff;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ck {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  .cv {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .cv.bt  { color: #059669; }
+  .cv.bf  { color: #dc2626; }
+  .cv.num { color: #2563eb; }
+  .cv.nd  { color: #cbd5e1; font-weight: 400; }
+
+  /* NS EVALUATOR */
+  .ns-body {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fdfcfb;
+  }
+
+  .legend {
+    display: flex;
+    gap: 12px;
+    font-size: 9.5px;
+    color: #64748b;
+    font-family: 'JetBrains Mono', monospace;
+    flex-wrap: wrap;
+  }
+
+  .lg-item { display: flex; align-items: center; gap: 4px; }
+  .lg-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .ns-input-row { display: flex; gap: 7px; }
+
+  .ns-input {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: #1e293b;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  .ns-input:focus { border-color: #6366f1; }
+
+  .ns-eval-btn {
+    padding: 0 16px;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .ns-eval-btn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+  .ns-eval-btn:not(:disabled):hover { background: #4f46e5; }
+
+  .char-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    min-height: 24px;
+  }
+
+  .pch {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 700;
+    width: 19px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+  }
+
+  .pch.U { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+  .pch.L { background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; }
+  .pch.D { background: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }
+  .pch.S { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+  .pch.W { background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
+
+  .valid-bar {
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    transition: all .3s;
+  }
+
+  .vb-idle { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+  .vb-pass { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
+  .vb-fail { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+
+  /* SCORE DISPLAY */
+  .score-display {
+    padding: 10px 14px;
+    background: #fdfcfb;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .score-big-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .score-num { font-size: 26px; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+  .score-label { font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-top: 3px; }
+
+  .score-right { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+  .strength-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+    width: fit-content;
+  }
+
+  .sVW { background: #fef2f2; border-color: #fca5a5; color: #ef4444; }
+  .sW  { background: #fffbeb; border-color: #fcd34d; color: #f59e0b; }
+  .sM  { background: #f0f9ff; border-color: #7dd3fc; color: #0ea5e9; }
+  .sSt { background: #ecfdf5; border-color: #6ee7b7; color: #10b981; }
+
+  .score-track { height: 7px; background: #f1f5f9; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .score-fill { height: 100%; border-radius: 6px; transition: width .6s ease; }
+  .score-ticks { display: flex; justify-content: space-between; font-size: 8px; color: #94a3b8; font-family: 'JetBrains Mono', monospace; }
+
+  .r-item { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #dc2626; display: flex; align-items: center; gap: 4px; }
+  .r-dot { width: 4px; height: 4px; border-radius: 50%; background: #dc2626; }
+
+  /* CHAR BREAKDOWN */
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); background: #e2e8f0; gap: 1px; }
+  .stat-card { background: #ffffff; padding: 6px 10px; text-align: center; }
+  .stat-val { font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-lbl { font-size: 8.5px; color: #64748b; text-transform: uppercase; margin-top: 1px; }
+
+  .sbar {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 5px 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: #64748b;
+  }
+  .si { display: flex; gap: 4px; align-items: center; }
+  .sd { width: 5px; height: 5px; border-radius: 50%; }
+  .sd.ok { background: #10b981; }
+  .sd.err { background: #ef4444; }
+  .sd.idle { background: #6366f1; }
+
+  /* AI ASSISTANT CARD (RIGHT) */
+  .ai-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ai-topbar {
+    background: linear-gradient(135deg, #1e1b4b, #312e81);
+    color: #ffffff;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ai-topbar-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-status-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.15);
+    color: #e0e7ff;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+
+  .ai-tabs {
+    display: flex;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .ai-tab {
+    flex: 1;
+    text-align: center;
+    padding: 9px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+  }
+
+  .ai-tab:hover { color: #1e293b; background: #f1f5f9; }
+  .ai-tab.active { color: #6366f1; border-bottom-color: #6366f1; background: #ffffff; }
+
+  .ai-panel {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fdfcfb;
+    min-height: 480px;
+  }
+
+  /* INPUT SAFETY GUARD CARD */
+  .safety-shield-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .shield-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 700;
+    color: #1e40af;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .shield-desc {
+    font-size: 10px;
+    color: #3b82f6;
+    line-height: 1.4;
+  }
+
+  .guard-status-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .guard-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #ffffff;
+    border: 1px solid #93c5fd;
+    color: #1d4ed8;
+  }
+
+  .guard-alert {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 10.5px;
+    display: none;
+    line-height: 1.4;
+  }
+
+  .ai-textarea {
+    width: 100%;
+    height: 90px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 12px;
+    color: #1e293b;
+    resize: none;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  .ai-textarea:focus { border-color: #6366f1; }
+
+  .ai-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .char-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: #94a3b8;
+  }
+
+  .btn-ai-action {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-ai-action:hover { opacity: 0.92; }
+  .btn-ai-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* AUDIT & TEST CARDS */
+  .audit-summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .audit-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .audit-rating {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
+  .audit-findings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .finding-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left-width: 4px;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 10.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .finding-card.CRITICAL { border-left-color: #ef4444; }
+  .finding-card.HIGH     { border-left-color: #f97316; }
+  .finding-card.MEDIUM   { border-left-color: #f59e0b; }
+  .finding-card.GOOD     { border-left-color: #10b981; }
+  .finding-card.INFO     { border-left-color: #3b82f6; }
+
+  .finding-title { font-weight: 600; color: #1e293b; display: flex; justify-content: space-between; }
+  .finding-rec   { color: #64748b; font-size: 9.5px; margin-top: 2px; }
+
+  /* TEST CASES LIST */
+  .tests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  .test-case-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 9px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .test-case-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .test-pwd-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e293b;
+    background: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .test-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .test-badge.PASS { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+  .test-badge.FAIL { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+  .test-meta {
+    font-size: 9.5px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .btn-test-run {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #4f46e5;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .btn-test-run:hover { background: #e0e7ff; }
+
+  /* APPROVAL MODAL */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-box {
+    background: #ffffff;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.95);
+    transition: transform .2s ease;
+    border: 1px solid #cbd5e1;
+  }
+
+  .modal-overlay.open .modal-box {
+    transform: scale(1);
+  }
+
+  .modal-header {
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .modal-body {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  .safety-verification-banner {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .svb-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #065f46;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .svb-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .svb-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #ffffff;
+    border: 1px solid #6ee7b7;
+    color: #047857;
+  }
+
+  .policy-diff-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .diff-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre.dsl-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px;
+    color: #0f172a;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+
+  .modal-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .btn-approve {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .2s;
+  }
+
+  .btn-approve:hover { background: #059669; }
+
+  .btn-discard {
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .btn-discard:hover { background: #f1f5f9; color: #1e293b; }
+
+  .empty {
+    color: #94a3b8;
+    font-size: 10px;
+    font-style: italic;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="main-shell">
+
+  <!-- SYSTEM BANNER -->
+  <div class="system-header">
+    <div class="sys-title">
+      <div class="sys-logo">⚙️</div>
+      <div class="sys-text">
+        <h1>Password Policy Compiler & AI Security Architecture</h1>
+        <p>Zero-Trust AI Guardrails · Deterministic C++ Compiler Pipeline · Neuro-Symbolic Evaluation</p>
+      </div>
+    </div>
+    <div class="sys-badges">
+      <div class="sys-badge green" id="backend-status-badge" onclick="checkBackendStatus(true)" style="cursor:pointer;" title="Click to test backend connection">
+        <span>●</span> C++ Backend: Connected
+      </div>
+      <div class="sys-badge purple" id="ai-provider-badge">
+        <span>✨</span> AI Engine: Active
+      </div>
+      <a href="http://localhost:3000" target="_blank" class="sys-badge amber" id="open-local-link" style="display:none; text-decoration:none; cursor:pointer;" title="Click to open through web server">
+        <span>🌐</span> Open http://localhost:3000
+      </a>
+      <button class="sys-badge amber" onclick="viewTargetCode()" style="cursor:pointer; background:none; border:1px solid #f59e0b;">
+        <span>📄</span> View Target C++
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="workspace-grid">
+
+    <!-- LEFT: EXISTING C++ COMPILER WORKSPACE -->
+    <div class="compiler-card">
+      <div class="topbar">
+        <div class="dot" style="background:#ff5f57"></div>
+        <div class="dot" style="background:#febc2e"></div>
+        <div class="dot" style="background:#28c840"></div>
+        <span class="topbar-title">Deterministic C++ Compiler Pipeline</span>
+        <span class="badge idle" id="badge">ready</span>
+      </div>
+
+      <!-- 1. SOURCE EDITOR -->
+      <div class="sec">① Policy DSL Editor</div>
+      <div class="editor-inner">
+        <div class="lnums" id="lnums"><span>1</span></div>
+        <textarea id="src" spellcheck="false" placeholder="# Write or approve your password policy&#10;minLength 12&#10;requireUpper true&#10;requireDigit true&#10;requireSpecial true"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="compile()">▶ Compile Pipeline</button>
+        <button class="btn-sec" onclick="clearAll()">Clear</button>
+        <button class="btn-ex" onclick="loadEx('strong')">Strong</button>
+        <button class="btn-ex" onclick="loadEx('medium')">Medium</button>
+        <button class="btn-ex" onclick="loadEx('weak')">Weak</button>
+        <button class="btn-ex" onclick="loadEx('err')">Errors</button>
+      </div>
+
+      <!-- 2. PIPELINE -->
+      <div class="sec">② Compilation Stages</div>
+      <div class="pipeline-section">
+        <div class="stages">
+          <div class="stg">
+            <div class="sbub" id="b-lex">LEX</div>
+            <div class="slbl" id="l-lex">Lexer</div>
+          </div>
+          <div class="sarr">›</div>
+          <div class="stg">
+            <div class="sbub" id="b-par">PAR</div>
+            <div class="slbl" id="l-par">Parser</div>
+          </div>
+          <div class="sarr">›</div>
+          <div class="stg">
+            <div class="sbub" id="b-sem">SEM</div>
+            <div class="slbl" id="l-sem">Semantic</div>
+          </div>
+          <div class="sarr">›</div>
+          <div class="stg">
+            <div class="sbub" id="b-ir">IR</div>
+            <div class="slbl" id="l-ir">IR Gen</div>
+          </div>
+          <div class="sarr">›</div>
+          <div class="stg">
+            <div class="sbub" id="b-cg">CG</div>
+            <div class="slbl" id="l-cg">Code Gen</div>
+          </div>
+          <div class="sarr">›</div>
+          <div class="stg">
+            <div class="sbub" id="b-ana">ANA</div>
+            <div class="slbl" id="l-ana">Analyzer</div>
+          </div>
+          <div class="sarr">›</div>
+          <div class="stg">
+            <div class="sbub" id="b-ns">NS</div>
+            <div class="slbl" id="l-ns">Neuro-Sym</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. TOKEN STREAM -->
+      <div class="sec">③ Token Stream (from Lexer)</div>
+      <div class="tok-wrap" id="tok-wrap"><span class="empty">tokens appear after compilation</span></div>
+
+      <!-- 4. COMPILER LOG -->
+      <div class="sec">④ Compiler Diagnostic Output</div>
+      <div class="log-body" id="log-area">
+        <div class="empty">compiler output appears here...</div>
+      </div>
+
+      <!-- 5. IR CONSTRAINTS -->
+      <div class="sec">⑤ Parsed IR Policy Constraints</div>
+      <div class="cg" id="cg">
+        <div style="grid-column:span 4" class="empty" style="padding:8px">no IR generated yet</div>
+      </div>
+
+      <!-- 6. IR WARNINGS -->
+      <div class="sec">⑥ IR Analysis Warnings</div>
+      <div class="log-body" id="warn-area" style="height:60px">
+        <div class="empty">warnings appear here</div>
+      </div>
+
+      <!-- 7. NEURO-SYMBOLIC EVALUATOR -->
+      <div class="sec">⑦ Neuro-Symbolic Password Evaluator</div>
+      <div class="ns-body">
+        <div class="legend">
+          <div class="lg-item"><div class="lg-dot" style="background:#8090ff"></div>Uppercase</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#34d399"></div>Lowercase</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>Digit</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#f87171"></div>Special</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#38bdf8"></div>Space</div>
+        </div>
+        <div class="ns-input-row">
+          <input class="ns-input" id="pw-input" type="text" placeholder="enter password to test against compiler..." oninput="onPwInput()">
+          <button class="ns-eval-btn" id="eval-btn" onclick="evalPassword()" disabled>Evaluate</button>
+        </div>
+        <div class="char-row" id="char-row"></div>
+      </div>
+      <div class="valid-bar vb-idle" id="valid-bar">— compile a policy to enable validator —</div>
+
+      <!-- 8. SCORE & RESULT -->
+      <div class="sec">⑧ Hybrid Score &amp; Strength</div>
+      <div class="score-display" id="score-display">
+        <div class="score-big-card">
+          <div class="score-num nd" id="score-num" style="color:#94a3b8">—</div>
+          <div class="score-label">Score / 14</div>
+        </div>
+        <div class="score-right">
+          <div id="strength-badge-wrap"><span class="empty">evaluate a password to see strength</span></div>
+          <div>
+            <div class="score-track">
+              <div class="score-fill" id="score-fill" style="width:0%;background:#cbd5e1"></div>
+            </div>
+            <div class="score-ticks"><span>Very Weak</span><span>Weak</span><span>Medium</span><span>Strong</span></div>
+          </div>
+          <div id="reasons-area"><span class="empty">no issues</span></div>
+        </div>
+      </div>
+
+      <!-- 9. CHAR BREAKDOWN -->
+      <div class="sec">⑨ Character Distribution</div>
+      <div class="stat-row" id="stat-row">
+        <div class="stat-card">
+          <div class="stat-val" style="color:#8090ff" id="st-up">—</div>
+          <div class="stat-lbl">Uppercase</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="color:#34d399" id="st-lo">—</div>
+          <div class="stat-lbl">Lowercase</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="color:#fbbf24" id="st-di">—</div>
+          <div class="stat-lbl">Digits</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="color:#f87171" id="st-sp">—</div>
+          <div class="stat-lbl">Special</div>
+        </div>
+      </div>
+
+      <!-- STATUS BAR -->
+      <div class="sbar">
+        <div class="si"><div class="sd idle" id="sd"></div><span id="st-txt">IDLE</span></div>
+        <div class="si"><span id="s-tok">TOKENS: —</span></div>
+        <div class="si"><span id="s-rul">RULES: —</span></div>
+        <div class="si"><span id="s-err">ERRORS: —</span></div>
+        <div class="si"><span id="s-score">SCORE: —</span></div>
+        <div class="si" style="margin-left:auto;">LEX › PAR › SEM › IR › CG › ANA › NS</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: PROPOSED AI ASSISTANT & SECURITY LAYER -->
+    <div class="ai-card">
+      <div class="ai-topbar">
+        <div class="ai-topbar-title">
+          <span>🛡️</span> AI Assistant &amp; Security Layer
+        </div>
+        <div class="ai-status-pill" id="ai-mode-pill">Zero-Trust Active</div>
+      </div>
+
+      <div class="ai-tabs">
+        <button class="ai-tab active" onclick="switchAiTab('nl2policy')">① Natural Lang</button>
+        <button class="ai-tab" onclick="switchAiTab('audit')">② Security Audit</button>
+        <button class="ai-tab" onclick="switchAiTab('synthetic')">③ Synthetic Tests</button>
+        <button class="ai-tab" onclick="switchAiTab('explainer')">④ Error Explainer</button>
+      </div>
+
+      <!-- TAB 1: PLAIN LANGUAGE TO POLICY -->
+      <div class="ai-panel" id="panel-nl2policy">
+        <div class="safety-shield-box">
+          <div class="shield-header">
+            <span>🛡️ Input Safety Checks</span>
+            <span>Zero-Trust Enabled</span>
+          </div>
+          <div class="shield-desc">
+            Payload size limiter &amp; Real password pattern blocker active. Real passwords will never be sent to the AI.
+          </div>
+          <div class="guard-status-row">
+            <span class="guard-pill">Max 800 Chars</span>
+            <span class="guard-pill">Secret Blocker: ON</span>
+            <span class="guard-pill">Compiler Dry-Run: ON</span>
+          </div>
+        </div>
+
+        <div class="guard-alert" id="guard-alert"></div>
+
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">
+            Describe password policy in plain English:
+          </label>
+          <textarea class="ai-textarea" id="ai-prompt-input" placeholder="e.g. Passwords must be at least 12 characters with numbers and symbols, but no spaces." oninput="onAiPromptInput()"></textarea>
+          <div class="ai-actions-row" style="margin-top:6px;">
+            <span class="char-counter" id="char-counter">0 / 800</span>
+            <button class="btn-ai-action" id="btn-generate-policy" onclick="requestAiPolicy()">
+              <span>✨</span> Generate Proposal
+            </button>
+          </div>
+        </div>
+
+        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;">Quick Presets</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn-ex" onclick="setNlPrompt('Enterprise NIST policy: at least 15 characters, requiring uppercase, lowercase, numbers, and symbols, no spaces')">Enterprise 15+ Chars</button>
+            <button class="btn-ex" onclick="setNlPrompt('Banking standard: between 12 and 32 characters with special characters and digits')">Banking 12-32</button>
+            <button class="btn-ex" onclick="setNlPrompt('Simple user-friendly policy: minimum 8 characters, requiring at least one number')">Simple 8+ Numbers</button>
+          </div>
+        </div>
+
+        <div style="font-size:10.5px;color:#64748b;line-height:1.5;background:#ffffff;border:1px solid #e2e8f0;padding:10px;border-radius:6px;">
+          <strong>Approval Gate:</strong> When generated, the proposal is tested in the C++ compiler dry-run, checked against schema rules, and presented in the <strong>User Approval Modal</strong> before modifying your editor.
+        </div>
+      </div>
+
+      <!-- TAB 2: POLICY SECURITY AUDIT -->
+      <div class="ai-panel" id="panel-audit" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1e293b;">NIST SP 800-63B &amp; OWASP Audit</div>
+            <div style="font-size:10px;color:#64748b;">Audits your current policy against global cybersecurity standards</div>
+          </div>
+          <button class="btn-ai-action" id="btn-run-audit" onclick="runPolicyAudit()">
+            <span>🔍</span> Audit Policy
+          </button>
+        </div>
+
+        <div id="audit-results-wrap">
+          <div class="empty" style="text-align:center;padding:40px 10px;">
+            Click 'Audit Policy' to analyze your policy against NIST SP 800-63B standards.
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: SYNTHETIC TEST CASES -->
+      <div class="ai-panel" id="panel-synthetic" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1e293b;">Synthetic Test-Case Generator</div>
+            <div style="font-size:10px;color:#64748b;">Guaranteed Fake Passwords Only · Verified by C++ Evaluator</div>
+          </div>
+          <button class="btn-ai-action" id="btn-generate-tests" onclick="generateSyntheticTests()">
+            <span>🧪</span> Run Mock Suite
+          </button>
+        </div>
+
+        <div id="synthetic-tests-wrap">
+          <div class="empty" style="text-align:center;padding:40px 10px;">
+            Click 'Run Mock Suite' to generate 6 synthetic test cases (3 pass, 3 fail) tested directly against the C++ compiler.
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: ERROR EXPLAINER -->
+      <div class="ai-panel" id="panel-explainer" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1e293b;">Compiler Error &amp; Warning Explainer</div>
+            <div style="font-size:10px;color:#64748b;">Translates compiler diagnostics into actionable plain English</div>
+          </div>
+          <button class="btn-ai-action" onclick="requestErrorExplanation()">
+            <span>💡</span> Explain Errors
+          </button>
+        </div>
+
+        <div id="explainer-results-wrap">
+          <div class="empty" style="text-align:center;padding:40px 10px;">
+            If compilation fails, click 'Explain Errors' to see educational explanations and one-click fixes.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- USER APPROVAL MODAL -->
+<div class="modal-overlay" id="approval-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><span>🛡️</span> Review &amp; Approve Suggested Policy</h3>
+      <button onclick="closeApprovalModal()" style="background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="safety-verification-banner">
+        <div class="svb-title">
+          <span>✓</span> Output Safety &amp; Compiler Verification Passed
+        </div>
+        <div class="svb-badges">
+          <span class="svb-badge">Grammar Whitelist: OK</span>
+          <span class="svb-badge">C++ Compiler Dry-Run: 0 Errors</span>
+          <span class="svb-badge">Zero-Trust Guard: Verified</span>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#475569;line-height:1.5;" id="modal-ai-explanation">
+        The AI synthesized the following policy DSL based on your requirements. Please inspect and approve before compiling:
+      </div>
+
+      <div class="policy-diff-box">
+        <div class="diff-label">Proposed Policy DSL</div>
+        <pre class="dsl-preview" id="modal-dsl-preview"></pre>
+      </div>
+
+      <div id="modal-warnings-box" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;font-size:10.5px;color:#d97706;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-discard" onclick="closeApprovalModal()">Discard Proposal</button>
+      <button class="btn-approve" onclick="approvePolicyProposal()">
+        <span>✓</span> Approve &amp; Send to Compiler
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TARGET CODE MODAL -->
+<div class="modal-overlay" id="target-code-modal">
+  <div class="modal-box" style="max-width:750px;">
+    <div class="modal-header">
+      <h3><span>📄</span> Generated Target C++ Code (generated_validator.cpp)</h3>
+      <button onclick="closeTargetCodeModal()" style="background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div class="modal-body">
+      <pre class="dsl-preview" id="target-code-preview" style="max-height:450px;"></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-discard" onclick="closeTargetCodeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Detect if opened via file:// or non-3000 port, route to backend server
+  const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '3000') 
+    ? 'http://localhost:3000' 
+    : '';
+
+  if (window.location.protocol === 'file:') {
+    const link = document.getElementById('open-local-link');
+    if (link) link.style.display = 'inline-flex';
+  }
+
+  const EXAMPLES = {
+    strong: `# Strong enterprise policy\nminLength 12\nmaxLength 64\nrequireUpper true\nrequireLower true\nrequireDigit true\nrequireSpecial true\nnoSpaces true`,
+    medium: `# Medium security policy\nminLength 8\nmaxLength 32\nrequireUpper true\nrequireLower true\nrequireDigit true\nrequireSpecial false\nnoSpaces true`,
+    weak: `# Weak policy\nminLength 4\nmaxLength 20\nrequireUpper false\nrequireLower true\nrequireDigit false\nrequireSpecial false\nnoSpaces false`,
+    err: `# Policy with typos and errors\nminLength 15\nmaxLength 10\nreqiureUpper maybe\nunknownRule true\nrequireDigit true`
+  };
+
+  let compiledConstraints = null;
+  let lastCompilerResult = null;
+  let pendingProposalDsl = '';
+  let isBackendOnline = false;
+
+  const srcEl = document.getElementById('src');
+  const lnumsEl = document.getElementById('lnums');
+
+  function loadEx(k) { srcEl.value = EXAMPLES[k]; updateLN(); }
+  function updateLN() {
+    const n = srcEl.value.split('\n').length;
+    lnumsEl.innerHTML = Array.from({ length: n }, (_, i) => `<span>${i + 1}</span>`).join('');
+  }
+  srcEl.addEventListener('input', updateLN);
+  srcEl.addEventListener('scroll', () => { lnumsEl.scrollTop = srcEl.scrollTop; });
+  updateLN();
+
+  // STAGE MANAGEMENT
+  function setStage(id, s) { 
+    const b = document.getElementById('b-' + id);
+    const l = document.getElementById('l-' + id);
+    if (b) b.className = 'sbub ' + s; 
+    if (l) l.className = 'slbl ' + s; 
+  }
+  function resetStages() { ['lex', 'par', 'sem', 'ir', 'cg', 'ana', 'ns'].forEach(x => setStage(x, '')); }
+
+  function log(areaId, badge, bc, msg, mc = '') {
+    const a = document.getElementById(areaId);
+    if (a.querySelector('.empty')) a.innerHTML = '';
+    const d = document.createElement('div'); d.className = 'll';
+    d.innerHTML = `<span class="lb ${bc}">${badge}</span><span class="lm ${mc}">${msg}</span>`;
+    a.appendChild(d); a.scrollTop = a.scrollHeight;
+  }
+
+  function logDiag(areaId, badge, bc, msg, pos, inputLines) {
+    const a = document.getElementById(areaId);
+    if (a.querySelector('.empty')) a.innerHTML = '';
+    const d = document.createElement('div');
+    d.className = 'll';
+    d.style.flexDirection = 'column';
+    d.style.gap = '2px';
+    d.style.marginBottom = '6px';
+    let html = `<div style="display:flex;gap:6px;align-items:flex-start"><span class="lb ${bc}">${badge}</span><span class="lm err">L${pos.line}:${pos.col} ${msg}</span></div>`;
+    if (pos.line > 0 && inputLines && pos.line <= inputLines.length) {
+      const lineStr = inputLines[pos.line - 1];
+      const prefix = `${pos.line} | `;
+      const spaceCount = prefix.length + pos.col - 1;
+      const spaces = '&nbsp;'.repeat(Math.max(0, spaceCount));
+      html += `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;background:#ffffff;padding:4px 8px;border-radius:4px;border:1px solid #e2e8f0;margin-left:26px">`;
+      html += `<div><span style="color:#94a3b8">${prefix}</span>${lineStr.replace(/ /g, '&nbsp;').replace(/</g, '&lt;')}</div>`;
+      html += `<div style="color:#ef4444">${spaces}^~~</div>`;
+      html += `</div>`;
+    }
+    d.innerHTML = html;
+    a.appendChild(d);
+    a.scrollTop = a.scrollHeight;
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* --------------------------------------------------------
+     CLIENT-SIDE COMPILER SIMULATOR (Fallback if offline)
+     -------------------------------------------------------- */
+  function clientTokenize(input) {
+    const tokens = [], errors = []; let i = 0, line = 1, col = 1;
+    const peek = () => i < input.length ? input[i] : '\0';
+    const get = () => { const c = input[i++]; if (c === '\n') { line++; col = 1; } else col++; return c; };
+    while (i < input.length) {
+      const c = peek();
+      if (c === ' ' || c === '\t' || c === '\r') { get(); continue; }
+      if (c === '#') { while (i < input.length && peek() !== '\n') get(); continue; }
+      if (c === '\n') { const p = { line, col }; get(); tokens.push({ type: 'Newline', lexeme: '\n', line: p.line, col: p.col }); continue; }
+      if (/[a-zA-Z_]/.test(c)) {
+        const p = { line, col }; let s = '';
+        while (i < input.length && /[a-zA-Z0-9_]/.test(peek())) s += get();
+        tokens.push({ type: (s === 'true' || s === 'false') ? 'Boolean' : 'Identifier', lexeme: s, line: p.line, col: p.col }); continue;
+      }
+      if (/[0-9]/.test(c)) {
+        const p = { line, col }; let s = '';
+        while (i < input.length && /[0-9]/.test(peek())) s += get();
+        tokens.push({ type: 'Number', lexeme: s, line: p.line, col: p.col }); continue;
+      }
+      const p = { line, col }; errors.push({ message: `Unexpected char: ${c}`, line: p.line, col: p.col }); tokens.push({ type: 'Unknown', lexeme: c, line: p.line, col: p.col }); get();
+    }
+    tokens.push({ type: 'End', lexeme: 'EOF', line, col });
+    return { tokens, errors };
+  }
+
+  function clientParse(tokens) {
+    const rules = [], errors = []; let k = 0;
+    const cur = () => tokens[Math.min(k, tokens.length - 1)];
+    const skipNL = () => { while (cur().type === 'Newline') k++; };
+    skipNL();
+    while (cur().type !== 'End') {
+      if (cur().type === 'Newline') { skipNL(); continue; }
+      if (cur().type === 'Unknown') { errors.push({ message: 'Unknown token', line: cur().line, col: cur().col }); while (cur().type !== 'Newline' && cur().type !== 'End') k++; if (cur().type === 'Newline') k++; continue; }
+      if (cur().type !== 'Identifier') { errors.push({ message: 'Expected rule name', line: cur().line, col: cur().col }); k++; continue; }
+      const nameTok = tokens[k++]; let value = '';
+      if (cur().type === 'Number' || cur().type === 'Boolean') value = tokens[k++].lexeme;
+      else { errors.push({ message: 'Expected value (number/true/false)', line: cur().line, col: cur().col }); k++; }
+      if (cur().type === 'Newline') k++;
+      rules.push({ name: nameTok.lexeme, value, line: nameTok.line, col: nameTok.col }); skipNL();
+    }
+    return { rules, errors };
+  }
+
+  function clientLevenshtein(s1, s2) {
+    const d = Array(s1.length + 1).fill(null).map(() => Array(s2.length + 1).fill(0));
+    for (let i = 0; i <= s1.length; i++) d[i][0] = i;
+    for (let j = 0; j <= s2.length; j++) d[0][j] = j;
+    for (let i = 1; i <= s1.length; i++) {
+      for (let j = 1; j <= s2.length; j++) {
+        const c = s1[i - 1].toLowerCase() === s2[j - 1].toLowerCase() ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+      }
+    }
+    return d[s1.length][s2.length];
+  }
+
+  function clientSemantic(rules) {
+    const errors = [];
+    const c = { minLength: -1, maxLength: -1, requireUpper: -1, requireLower: -1, requireDigit: -1, requireSpecial: -1, noSpaces: -1 };
+    const valid = ['minLength', 'maxLength', 'requireUpper', 'requireLower', 'requireDigit', 'requireSpecial', 'noSpaces'];
+    for (const r of rules) {
+      if (!valid.includes(r.name)) {
+        let best = '', minD = 3;
+        for (const v of valid) {
+          const d = clientLevenshtein(r.name, v);
+          if (d < minD) { minD = d; best = v; }
+        }
+        let msg = `Unknown rule: '${r.name}'`;
+        if (best) msg += `. Did you mean '${best}'?`;
+        errors.push({ message: msg, line: r.line, col: r.col });
+        continue;
+      }
+      if (r.name === 'minLength' || r.name === 'maxLength') {
+        const v = parseInt(r.value);
+        if (isNaN(v)) errors.push({ message: `${r.name} must be a number`, line: r.line, col: r.col });
+        else c[r.name] = v;
+      } else {
+        if (r.value !== 'true' && r.value !== 'false') errors.push({ message: `${r.name} must be true or false`, line: r.line, col: r.col });
+        else c[r.name] = r.value === 'true' ? 1 : 0;
+      }
+    }
+    if (c.minLength !== -1 && c.maxLength !== -1 && c.minLength > c.maxLength)
+      errors.push({ message: 'minLength cannot be greater than maxLength', line: 0, col: 0 });
+    return { constraints: c, errors };
+  }
+
+  function clientIrAnalyze(c) {
+    const w = [];
+    if (c.minLength !== -1 && c.maxLength !== -1 && c.minLength === c.maxLength) w.push(`Password length is fixed (${c.minLength})`);
+    if (c.minLength !== -1 && c.minLength < 6) w.push('Weak policy: minimum length too small');
+    if (c.minLength >= 10 && c.requireUpper === 1 && c.requireLower === 1 && c.requireDigit === 1) w.push('Strong policy detected');
+    return w;
+  }
+
+  function clientValidatePw(pw, c) {
+    let up = 0, lo = 0, di = 0, sp = 0, ws = 0;
+    for (const ch of pw) { if (/[A-Z]/.test(ch)) up++; else if (/[a-z]/.test(ch)) lo++; else if (/[0-9]/.test(ch)) di++; else if (/\s/.test(ch)) ws++; else sp++; }
+    if (c.minLength !== -1 && pw.length < c.minLength) return false;
+    if (c.maxLength !== -1 && pw.length > c.maxLength) return false;
+    if (c.requireUpper === 1 && up === 0) return false;
+    if (c.requireUpper === 0 && up > 0) return false;
+    if (c.requireLower === 1 && lo === 0) return false;
+    if (c.requireLower === 0 && lo > 0) return false;
+    if (c.requireDigit === 1 && di === 0) return false;
+    if (c.requireDigit === 0 && di > 0) return false;
+    if (c.requireSpecial === 1 && sp === 0) return false;
+    if (c.requireSpecial === 0 && sp > 0) return false;
+    if (c.noSpaces === 1 && ws > 0) return false;
+    if (c.noSpaces === 0 && ws === 0) return false;
+    return true;
+  }
+
+  function clientGetViolations(pw, c) {
+    const v = [];
+    let up = 0, lo = 0, di = 0, sp = 0, ws = 0;
+    for (const ch of pw) { if (/[A-Z]/.test(ch)) up++; else if (/[a-z]/.test(ch)) lo++; else if (/[0-9]/.test(ch)) di++; else if (/\s/.test(ch)) ws++; else sp++; }
+    if (c.minLength !== -1 && pw.length < c.minLength) v.push(`Below minimum length: password has ${pw.length} character(s) (requires at least ${c.minLength})`);
+    if (c.maxLength !== -1 && pw.length > c.maxLength) v.push(`Exceeds maximum length: password has ${pw.length} characters (maximum allowed is ${c.maxLength})`);
+    if (c.requireUpper === 1 && up === 0) v.push('Missing required uppercase letter (A-Z)');
+    if (c.requireUpper === 0 && up > 0) v.push('Contains forbidden uppercase letter');
+    if (c.requireLower === 1 && lo === 0) v.push('Missing required lowercase letter (a-z)');
+    if (c.requireLower === 0 && lo > 0) v.push('Contains forbidden lowercase letter');
+    if (c.requireDigit === 1 && di === 0) v.push('Missing required numeric digit (0-9)');
+    if (c.requireDigit === 0 && di > 0) v.push('Contains forbidden digit');
+    if (c.requireSpecial === 1 && sp === 0) v.push('Missing required special character (!@#$%^&*...)');
+    if (c.requireSpecial === 0 && sp > 0) v.push('Contains forbidden special character');
+    if (c.noSpaces === 1 && ws > 0) v.push('Contains forbidden space/whitespace characters');
+    if (c.noSpaces === 0 && ws === 0) v.push('Missing required space character');
+    return v;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function clientNsEval(pw, c) {
+    let score = 0; const reasons = [];
+    let up = 0, lo = 0, di = 0, sp = 0, ws = 0;
+    for (const ch of pw) { if (/[A-Z]/.test(ch)) up++; else if (/[a-z]/.test(ch)) lo++; else if (/[0-9]/.test(ch)) di++; else if (/\s/.test(ch)) ws++; else sp++; }
+    if (c.minLength !== -1) { if (pw.length >= c.minLength) score += 2; else reasons.push('Below minimum length'); }
+    if (c.maxLength !== -1) { if (pw.length <= c.maxLength) score += 1; else reasons.push('Exceeds maximum length'); }
+    if (c.requireUpper === 1) { if (up > 0) score += 1; else reasons.push('Missing uppercase letter'); }
+    if (c.requireLower === 1) { if (lo > 0) score += 1; else reasons.push('Missing lowercase letter'); }
+    if (c.requireDigit === 1) { if (di > 0) score += 1; else reasons.push('Missing digit'); }
+    if (c.requireSpecial === 1) { if (sp > 0) score += 2; else reasons.push('Missing special character'); }
+    if (c.noSpaces === 1) { if (ws === 0) score += 1; else reasons.push('Contains spaces'); }
+    if (pw.length >= 12) score += 2; else if (pw.length >= 8) score += 1; else score -= 1;
+    if (up > 0 && lo > 0 && di > 0 && sp > 0) score += 2;
+    for (let i = 1; i < pw.length; i++) if (pw[i] === pw[i - 1]) score -= 1;
+    for (let i = 2; i < pw.length; i++) {
+      if (pw.charCodeAt(i) === pw.charCodeAt(i - 1) + 1 && pw.charCodeAt(i - 1) === pw.charCodeAt(i - 2) + 1) {
+        score -= 2; reasons.push('Sequential pattern detected'); break;
+      }
+    }
+    const common = new Set(['password', '123456', 'admin', 'qwerty', 'welcome', 'letmein']);
+    if (common.has(pw)) { score = 0; reasons.push('Common password detected'); }
+    const level = score <= 2 ? 'Very Weak' : score <= 4 ? 'Weak' : score <= 7 ? 'Medium' : 'Strong';
+    return { score, level, reasons, up, lo, di, sp, ws };
+  }
+
+  async function runInBrowserFallback(input, inputLines) {
+    setStage('lex', 'active'); await sleep(80);
+    const { tokens, errors: le } = clientTokenize(input);
+    renderTokens(tokens);
+    const realTokens = tokens.filter(t => t.type !== 'Newline' && t.type !== 'End');
+    document.getElementById('s-tok').textContent = `TOKENS: ${realTokens.length}`;
+    if (le.length) {
+      setStage('lex', 'err');
+      lastCompilerResult = { success: false, stage: 'lexical', errors: le };
+      handleCompilerFailure(lastCompilerResult, inputLines);
+      return;
+    }
+    setStage('lex', 'ok');
+    log('log-area', 'LEX', 'lo', `Lexical analysis successful: ${realTokens.length} tokens extracted`, 'ok');
+
+    await sleep(60); setStage('par', 'active');
+    const { rules, errors: pe } = clientParse(tokens);
+    document.getElementById('s-rul').textContent = `RULES: ${rules.length}`;
+    if (pe.length) {
+      setStage('par', 'err');
+      lastCompilerResult = { success: false, stage: 'syntax', errors: pe };
+      handleCompilerFailure(lastCompilerResult, inputLines);
+      return;
+    }
+    setStage('par', 'ok');
+    log('log-area', 'PAR', 'lo', `Syntax analysis: AST verified`, 'ok');
+
+    await sleep(60); setStage('sem', 'active');
+    const { constraints: c, errors: se } = clientSemantic(rules);
+    if (se.length) {
+      setStage('sem', 'err');
+      lastCompilerResult = { success: false, stage: 'semantic', errors: se };
+      handleCompilerFailure(lastCompilerResult, inputLines);
+      return;
+    }
+    setStage('sem', 'ok');
+    log('log-area', 'SEM', 'lo', `Semantic verification & constraint mapping complete`, 'ok');
+    renderConstraints(c);
+    compiledConstraints = c;
+
+    await sleep(60); setStage('ir', 'ok');
+    log('log-area', 'IR', 'lo', `Intermediate Representation (PolicyIR) built`, 'ok');
+
+    await sleep(60); setStage('cg', 'ok');
+    log('log-area', 'CG', 'lo', `Target C++ code emitted to generated_validator.cpp`, 'ok');
+
+    await sleep(60);
+    const warnings = clientIrAnalyze(c);
+    if (warnings.length) {
+      setStage('ana', 'warn');
+      document.getElementById('warn-area').innerHTML = '';
+      warnings.forEach(w => {
+        log('warn-area', 'WARN', 'lw', w);
+        log('log-area', 'WARN', 'lw', w);
+      });
+    } else {
+      setStage('ana', 'ok');
+      log('warn-area', 'OK', 'lo', 'No security policy warnings found', 'ok');
+      log('log-area', 'OK', 'lo', 'IR static analysis: clean', 'ok');
+    }
+
+    setStage('ns', 'active');
+    log('log-area', 'NS', 'li', 'Neuro-Symbolic hybrid evaluation engine ready', 'ok');
+    log('log-area', 'OK', 'lo', 'Policy compiled successfully (In-Browser Simulation) ✓', 'ok');
+
+    document.getElementById('eval-btn').disabled = false;
+    document.getElementById('valid-bar').className = 'valid-bar vb-idle';
+    document.getElementById('valid-bar').textContent = '— enter a password above to evaluate —';
+    document.getElementById('s-err').textContent = 'ERRORS: 0';
+    document.getElementById('sd').className = 'sd ok';
+    document.getElementById('st-txt').textContent = 'COMPILED';
+    setBadge('ok', `compiled · ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`);
+    lastCompilerResult = { success: true, stage: 'complete', tokens, constraints: c, warnings };
+  }
+
+  /**
+   * CORE COMPILATION:
+   * Connects to backend C++ compiler, with seamless in-browser fallback
+   */
+  async function compile() {
+    const input = srcEl.value.trim();
+    if (!input) return;
+    const inputLines = input.split('\n');
+    compiledConstraints = null;
+    resetStages();
+
+    document.getElementById('log-area').innerHTML = '';
+    document.getElementById('tok-wrap').innerHTML = '';
+    document.getElementById('warn-area').innerHTML = '<div class="empty">warnings appear here</div>';
+    document.getElementById('cg').innerHTML = '<div style="grid-column:span 4" class="empty">compiling via C++ pipeline...</div>';
+    document.getElementById('eval-btn').disabled = true;
+    document.getElementById('valid-bar').className = 'valid-bar vb-idle';
+    document.getElementById('valid-bar').textContent = '— compile a policy to enable validator —';
+    resetScoreDisplay();
+    setBadge('warn', 'compiling...');
+
+    try {
+      setStage('lex', 'active');
+      log('log-area', 'SYS', 'lt', 'Dispatching policy to C++ Compiler Pipeline...');
+
+      const res = await fetch(`${API_BASE}/api/compile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyDsl: input })
+      });
+
+      const data = await res.json();
+      lastCompilerResult = data;
+      isBackendOnline = true;
+      document.getElementById('backend-status-badge').className = 'sys-badge green';
+      document.getElementById('backend-status-badge').innerHTML = '<span>●</span> C++ Backend: Connected';
+
+      if (!data.success) {
+        handleCompilerFailure(data, inputLines);
+        return;
+      }
+
+      // 1. Lexer Success
+      setStage('lex', 'ok');
+      renderTokens(data.tokens || []);
+      const realTokens = (data.tokens || []).filter(t => t.type !== 'Newline' && t.type !== 'End');
+      document.getElementById('s-tok').textContent = `TOKENS: ${realTokens.length}`;
+      log('log-area', 'LEX', 'lo', `Lexical analysis successful: ${realTokens.length} tokens extracted`, 'ok');
+
+      // 2. Parser Success
+      await sleep(80);
+      setStage('par', 'ok');
+      log('log-area', 'PAR', 'lo', `Syntax analysis: AST verified`, 'ok');
+
+      // 3. Semantic Success
+      await sleep(80);
+      setStage('sem', 'ok');
+      log('log-area', 'SEM', 'lo', `Semantic verification & constraint mapping complete`, 'ok');
+      renderConstraints(data.constraints);
+      compiledConstraints = data.constraints;
+
+      // 4. IR Generation
+      await sleep(80);
+      setStage('ir', 'ok');
+      log('log-area', 'IR', 'lo', `Intermediate Representation (PolicyIR) built`, 'ok');
+
+      // 5. Code Gen
+      await sleep(80);
+      setStage('cg', 'ok');
+      log('log-area', 'CG', 'lo', `Standalone target C++ code emitted to ${data.generated_code_file}`, 'ok');
+
+      // 6. IR Analysis
+      await sleep(80);
+      const warnings = data.warnings || [];
+      if (warnings.length) {
+        setStage('ana', 'warn');
+        document.getElementById('warn-area').innerHTML = '';
+        warnings.forEach(w => {
+          log('warn-area', 'WARN', 'lw', w);
+          log('log-area', 'WARN', 'lw', w);
+        });
+      } else {
+        setStage('ana', 'ok');
+        log('warn-area', 'OK', 'lo', 'No security policy warnings found', 'ok');
+        log('log-area', 'OK', 'lo', 'IR static analysis: clean', 'ok');
+      }
+
+      // 7. Neuro-Symbolic Evaluator Ready
+      setStage('ns', 'active');
+      log('log-area', 'NS', 'li', 'Neuro-Symbolic hybrid evaluation engine ready', 'ok');
+      log('log-area', 'OK', 'lo', 'Compilation pipeline completed successfully ✓', 'ok');
+
+      document.getElementById('eval-btn').disabled = false;
+      document.getElementById('valid-bar').className = 'valid-bar vb-idle';
+      document.getElementById('valid-bar').textContent = '— enter a password above to evaluate —';
+      document.getElementById('s-err').textContent = 'ERRORS: 0';
+      document.getElementById('sd').className = 'sd ok';
+      document.getElementById('st-txt').textContent = 'COMPILED';
+      setBadge('ok', `compiled · ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`);
+
+    } catch (err) {
+      isBackendOnline = false;
+      log('log-area', 'WARN', 'lw', `Backend not reachable via ${API_BASE || 'localhost:3000'}. Running in-browser compiler simulation...`);
+      await runInBrowserFallback(input, inputLines);
+    }
+  }
+
+  function handleCompilerFailure(data, inputLines) {
+    const stage = data.stage || 'semantic';
+    setStage(stage === 'lexical' ? 'lex' : stage === 'syntax' ? 'par' : 'sem', 'err');
+
+    const errors = data.errors || [];
+    errors.forEach(e => {
+      logDiag('log-area', 'ERR', 'le', e.message, { line: e.line, col: e.col }, inputLines);
+    });
+
+    document.getElementById('s-err').textContent = `ERRORS: ${errors.length}`;
+    document.getElementById('sd').className = 'sd err';
+    document.getElementById('st-txt').textContent = 'FAILED';
+    document.getElementById('cg').innerHTML = '<div style="grid-column:span 4;color:#ef4444;font-size:10px;font-family:JetBrains Mono,monospace;padding:8px 0">compilation rejected</div>';
+    setBadge('err', `${errors.length} error${errors.length !== 1 ? 's' : ''}`);
+
+    log('log-area', 'AI', 'li', '💡 AI Explainer is ready to diagnose and auto-fix this error in the right panel.');
+  }
+
+  function renderTokens(tokens) {
+    const w = document.getElementById('tok-wrap');
+    w.innerHTML = '';
+    const cls = { Identifier: 'ci', Number: 'cn', Boolean: 'cb', Newline: 'cnl', End: 'ce', Unknown: 'cu' };
+    tokens.forEach(t => {
+      if (t.type === 'Newline') return;
+      const s = document.createElement('span');
+      s.className = `chip ${cls[t.type] || 'ci'}`;
+      s.title = `${t.type} @ ${t.line}:${t.col}`;
+      s.textContent = t.type === 'End' ? 'EOF' : t.lexeme;
+      w.appendChild(s);
+    });
+  }
+
+  function renderConstraints(c) {
+    const g = document.getElementById('cg');
+    g.innerHTML = '';
+    const fields = [
+      ['minLength', c.minLength === -1 ? '—' : c.minLength, c.minLength === -1 ? 'nd' : 'num'],
+      ['maxLength', c.maxLength === -1 ? '—' : c.maxLength, c.maxLength === -1 ? 'nd' : 'num'],
+      ['reqUpper', c.requireUpper === -1 ? '—' : (c.requireUpper === 1 ? 'true' : 'false'), c.requireUpper === -1 ? 'nd' : (c.requireUpper === 1 ? 'bt' : 'bf')],
+      ['reqLower', c.requireLower === -1 ? '—' : (c.requireLower === 1 ? 'true' : 'false'), c.requireLower === -1 ? 'nd' : (c.requireLower === 1 ? 'bt' : 'bf')],
+      ['reqDigit', c.requireDigit === -1 ? '—' : (c.requireDigit === 1 ? 'true' : 'false'), c.requireDigit === -1 ? 'nd' : (c.requireDigit === 1 ? 'bt' : 'bf')],
+      ['reqSpecial', c.requireSpecial === -1 ? '—' : (c.requireSpecial === 1 ? 'true' : 'false'), c.requireSpecial === -1 ? 'nd' : (c.requireSpecial === 1 ? 'bt' : 'bf')],
+      ['noSpaces', c.noSpaces === -1 ? '—' : (c.noSpaces === 1 ? 'true' : 'false'), c.noSpaces === -1 ? 'nd' : (c.noSpaces === 1 ? 'bt' : 'bf')],
+    ];
+    fields.forEach(([k, v, cls]) => {
+      const el = document.createElement('div');
+      el.className = 'cc';
+      el.innerHTML = `<div class="ck">${k}</div><div class="cv ${cls}">${v}</div>`;
+      g.appendChild(el);
+    });
+  }
+
+  function resetScoreDisplay() {
+    document.getElementById('score-num').textContent = '—';
+    document.getElementById('score-num').style.color = '#94a3b8';
+    document.getElementById('score-fill').style.width = '0%';
+    document.getElementById('score-fill').style.background = '#cbd5e1';
+    document.getElementById('strength-badge-wrap').innerHTML = '<span class="empty">evaluate a password to see strength</span>';
+    document.getElementById('reasons-area').innerHTML = '<span class="empty">no issues</span>';
+    document.getElementById('st-up').textContent = '—';
+    document.getElementById('st-lo').textContent = '—';
+    document.getElementById('st-di').textContent = '—';
+    document.getElementById('st-sp').textContent = '—';
+    document.getElementById('s-score').textContent = 'SCORE: —';
+  }
+
+  function onPwInput() {
+    const pw = document.getElementById('pw-input').value;
+    const wrap = document.getElementById('char-row');
+    wrap.innerHTML = '';
+    for (const ch of pw) {
+      const s = document.createElement('span');
+      const cls = /[A-Z]/.test(ch) ? 'U' : /[a-z]/.test(ch) ? 'L' : /[0-9]/.test(ch) ? 'D' : /\s/.test(ch) ? 'W' : 'S';
+      s.className = `pch ${cls}`;
+      s.textContent = ch === ' ' ? '·' : ch;
+      wrap.appendChild(s);
+    }
+  }
+
+  /**
+   * NEURO-SYMBOLIC PASSWORD EVALUATION:
+   */
+  async function evalPassword() {
+    const pw = document.getElementById('pw-input').value;
+    if (!pw) return;
+
+    const inputDsl = srcEl.value.trim();
+    try {
+      const res = await fetch(`${API_BASE}/api/compile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyDsl: inputDsl, password: pw })
+      });
+
+      const data = await res.json();
+      if (!data.evaluation) return;
+
+      applyEvalResult(pw, data.evaluation);
+    } catch (e) {
+      // Fallback to local evaluation
+      if (compiledConstraints) {
+        const valid = clientValidatePw(pw, compiledConstraints);
+        const violations = clientGetViolations(pw, compiledConstraints);
+        if (!valid) {
+          applyEvalResult(pw, { isValid: false, score: 0, level: 'Invalid', reasons: violations, violations });
+        } else {
+          const res = clientNsEval(pw, compiledConstraints);
+          applyEvalResult(pw, { isValid: true, score: res.score, level: res.level, reasons: res.reasons });
+        }
+      }
+    }
+  }
+
+  let lastPasswordEval = null;
+
+  function openPasswordErrorExplanation() {
+    switchAiTab('explainer');
+    requestErrorExplanation();
+  }
+
+  function applyEvalResult(pw, ev) {
+    lastPasswordEval = { password: pw, evaluation: ev, constraints: compiledConstraints };
+    const validBar = document.getElementById('valid-bar');
+    if (!ev.isValid) {
+      setStage('ns', 'err');
+      validBar.className = 'valid-bar vb-fail';
+      validBar.textContent = '✗  Password does NOT satisfy policy rules';
+      document.getElementById('score-num').textContent = '✗';
+      document.getElementById('score-num').style.color = '#ef4444';
+      document.getElementById('score-fill').style.width = '0%';
+      document.getElementById('strength-badge-wrap').innerHTML = '<span class="strength-badge sVW">✗ Fails Policy</span>';
+      
+      const reasons = (ev.violations && ev.violations.length > 0)
+        ? ev.violations
+        : (ev.reasons && ev.reasons.length > 0)
+          ? ev.reasons
+          : ['Violates one or more compiled constraints'];
+
+      let rhtml = reasons.map(r => `
+        <div class="r-item" style="margin-bottom:4px;">
+          <div class="r-dot" style="background:#ef4444;"></div>
+          <span><strong>Violation:</strong> ${escapeHtml(r)}</span>
+        </div>
+      `).join('');
+
+      rhtml += `
+        <div style="margin-top:8px;">
+          <button class="btn-test-run" style="background:#e0e7ff;border:1px solid #a5b4fc;color:#4338ca;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;" onclick="openPasswordErrorExplanation()">
+            💡 Explain Password Failure with AI
+          </button>
+        </div>
+      `;
+
+      document.getElementById('reasons-area').innerHTML = rhtml;
+      document.getElementById('s-score').textContent = 'SCORE: FAIL';
+      setBadge('err', 'policy violation');
+      updateCharStats(pw);
+      return;
+    }
+
+    setStage('ns', 'ok');
+    validBar.className = 'valid-bar vb-pass';
+    validBar.textContent = '✓  Password satisfies all compiled rules';
+
+    const maxScore = 14;
+    const pct = Math.min(100, Math.max(0, Math.round(ev.score / maxScore * 100)));
+    const col = ev.level === 'Very Weak' ? '#ef4444' : ev.level === 'Weak' ? '#f59e0b' : ev.level === 'Medium' ? '#0ea5e9' : '#10b981';
+    const bc = ev.level === 'Very Weak' ? 'sVW' : ev.level === 'Weak' ? 'sW' : ev.level === 'Medium' ? 'sM' : 'sSt';
+    const icon = ev.level === 'Very Weak' ? '✗' : ev.level === 'Weak' ? '⚠' : ev.level === 'Medium' ? '◎' : '✓';
+
+    document.getElementById('score-num').textContent = ev.score;
+    document.getElementById('score-num').style.color = col;
+    document.getElementById('score-fill').style.width = pct + '%';
+    document.getElementById('score-fill').style.background = col;
+    document.getElementById('strength-badge-wrap').innerHTML = `<span class="strength-badge ${bc}">${icon} ${ev.level}</span>`;
+
+    const reasons = ev.reasons || [];
+    const rhtml = reasons.length === 0
+      ? `<div style="color:#059669;font-size:10px;font-family:'JetBrains Mono',monospace">✓ Optimal security posture</div>`
+      : reasons.map(r => `<div class="r-item"><div class="r-dot"></div>${escapeHtml(r)}</div>`).join('');
+    document.getElementById('reasons-area').innerHTML = rhtml;
+
+    document.getElementById('s-score').textContent = `SCORE: ${ev.score}`;
+    setBadge('ok', `${ev.level} · ${ev.score} / 14`);
+    updateCharStats(pw);
+  }
+
+  function updateCharStats(pw) {
+    let u=0, l=0, d=0, s=0;
+    for (const c of pw) {
+      if (/[A-Z]/.test(c)) u++;
+      else if (/[a-z]/.test(c)) l++;
+      else if (/[0-9]/.test(c)) d++;
+      else s++;
+    }
+    document.getElementById('st-up').textContent = u;
+    document.getElementById('st-lo').textContent = l;
+    document.getElementById('st-di').textContent = d;
+    document.getElementById('st-sp').textContent = s;
+  }
+
+  function setBadge(cls, txt) { 
+    const b = document.getElementById('badge'); 
+    b.className = `badge ${cls}`; 
+    b.textContent = txt; 
+  }
+
+  function clearAll() {
+    srcEl.value = '';
+    updateLN();
+    resetStages();
+    compiledConstraints = null;
+    lastCompilerResult = null;
+    document.getElementById('log-area').innerHTML = '<div class="empty">output appears here after compilation</div>';
+    document.getElementById('tok-wrap').innerHTML = '<span class="empty">tokens appear after compilation</span>';
+    document.getElementById('warn-area').innerHTML = '<div class="empty">warnings appear here</div>';
+    document.getElementById('cg').innerHTML = '<div style="grid-column:span 4" class="empty">no IR generated yet</div>';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('char-row').innerHTML = '';
+    document.getElementById('eval-btn').disabled = true;
+    document.getElementById('valid-bar').className = 'valid-bar vb-idle';
+    document.getElementById('valid-bar').textContent = '— compile a policy to enable validator —';
+    resetScoreDisplay();
+    document.getElementById('sd').className = 'sd idle';
+    document.getElementById('st-txt').textContent = 'IDLE';
+    document.getElementById('s-tok').textContent = 'TOKENS: —';
+    document.getElementById('s-rul').textContent = 'RULES: —';
+    document.getElementById('s-err').textContent = 'ERRORS: —';
+    setBadge('idle', 'ready');
+  }
+
+  /* ========================================================
+     AI ASSISTANT & SAFETY LAYER LOGIC
+     ======================================================== */
+  function switchAiTab(tabId) {
+    document.querySelectorAll('.ai-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ai-panel').forEach(p => p.style.display = 'none');
+    
+    const tabs = Array.from(document.querySelectorAll('.ai-tab'));
+    const matchedTab = tabs.find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+    if (matchedTab) {
+      matchedTab.classList.add('active');
+    } else if (window.event && window.event.target && window.event.target.classList.contains('ai-tab')) {
+      window.event.target.classList.add('active');
+    }
+
+    const panel = document.getElementById('panel-' + tabId);
+    if (panel) panel.style.display = 'flex';
+
+    if (tabId === 'explainer') {
+      requestErrorExplanation();
+    }
+  }
+
+  function setNlPrompt(txt) {
+    document.getElementById('ai-prompt-input').value = txt;
+    onAiPromptInput();
+  }
+
+  function onAiPromptInput() {
+    const val = document.getElementById('ai-prompt-input').value;
+    document.getElementById('char-counter').textContent = `${val.length} / 800`;
+
+    // Real-time client-side safety guard heuristic
+    const alertBox = document.getElementById('guard-alert');
+    if (/(?:password|pwd|secret)\s*[:=]/i.test(val) || /sk-[a-zA-Z0-9]{15,}/.test(val)) {
+      alertBox.style.display = 'block';
+      alertBox.textContent = '⚠️ Safety Warning: Detected potential sensitive credential pattern. Real passwords must never be entered into the AI prompt.';
+    } else {
+      alertBox.style.display = 'none';
+    }
+  }
+
+  function showConnectionHelp(actionName = 'This feature') {
+    alert(`${actionName} requires the backend server to be running.\n\nPlease start the server by double-clicking 'run_compiler_ide.bat' or running 'node server.js' in the CODE folder, and make sure it is accessible at http://localhost:3000.`);
+  }
+
+  /**
+   * FEATURE 1: Request AI Policy Synthesis
+   */
+  async function requestAiPolicy() {
+    const prompt = document.getElementById('ai-prompt-input').value.trim();
+    if (!prompt) return;
+
+    const btn = document.getElementById('btn-generate-policy');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Synthesizing...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/nl-to-policy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      const data = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = '<span>✨</span> Generate Proposal';
+
+      if (!data.ok) {
+        alert(`Safety Check Alert: ${data.error}`);
+        return;
+      }
+
+      // Open Human Approval Modal
+      pendingProposalDsl = data.proposedDsl;
+      document.getElementById('modal-dsl-preview').textContent = data.proposedDsl;
+      document.getElementById('modal-ai-explanation').textContent = data.explanation || 'Synthesized according to your specifications and passed dry-run verification.';
+      
+      const wbox = document.getElementById('modal-warnings-box');
+      if (data.warnings && data.warnings.length) {
+        wbox.style.display = 'block';
+        wbox.innerHTML = '<strong>IR Warnings:</strong> ' + data.warnings.join('; ');
+      } else {
+        wbox.style.display = 'none';
+      }
+
+      document.getElementById('approval-modal').classList.add('open');
+
+    } catch (e) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>✨</span> Generate Proposal';
+      showConnectionHelp('Generating policy proposals via AI');
+    }
+  }
+
+  function closeApprovalModal() {
+    document.getElementById('approval-modal').classList.remove('open');
+  }
+
+  function approvePolicyProposal() {
+    closeApprovalModal();
+    if (!pendingProposalDsl) return;
+    srcEl.value = pendingProposalDsl;
+    updateLN();
+    compile();
+  }
+
+  /**
+   * FEATURE 2: Run Security Policy Audit
+   */
+  async function runPolicyAudit() {
+    const policyDsl = srcEl.value.trim();
+    if (!policyDsl) {
+      alert('Please enter or compile a policy first to audit.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-run-audit');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Auditing...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyDsl })
+      });
+
+      const data = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔍</span> Audit Policy';
+
+      if (!data.ok) {
+        alert(data.error);
+        return;
+      }
+
+      const ratingCol = data.rating === 'Strong' ? '#10b981' : data.rating === 'Moderate' ? '#f59e0b' : '#ef4444';
+      const ratingBg = data.rating === 'Strong' ? '#ecfdf5' : data.rating === 'Moderate' ? '#fffbeb' : '#fef2f2';
+
+      let html = `
+        <div class="audit-summary-card">
+          <div class="audit-head">
+            <div>
+              <span style="font-size:10px;text-transform:uppercase;color:#64748b;font-weight:700;">Overall Security Posture</span>
+              <div style="font-size:18px;font-weight:800;color:${ratingCol}">${data.score} / 100</div>
+            </div>
+            <div class="audit-rating" style="background:${ratingBg};color:${ratingCol};border:1px solid ${ratingCol}">${data.rating}</div>
+          </div>
+          <div style="font-size:9.5px;color:#94a3b8;font-family:'JetBrains Mono',monospace;">Standards: ${data.standards}</div>
+        </div>
+        <div class="audit-findings-list">
+      `;
+
+      data.findings.forEach(f => {
+        html += `
+          <div class="finding-card ${f.severity}">
+            <div class="finding-title">
+              <span>${f.category}</span>
+              <span style="font-size:8.5px;text-transform:uppercase;">${f.severity}</span>
+            </div>
+            <div style="color:#334155;">${f.issue}</div>
+            <div class="finding-rec">💡 ${f.recommendation}</div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      document.getElementById('audit-results-wrap').innerHTML = html;
+
+    } catch (e) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔍</span> Audit Policy';
+      showConnectionHelp('Running security policy audit');
+    }
+  }
+
+  /**
+   * FEATURE 3: Generate Synthetic Test Suite (Fake Passwords Only)
+   */
+  async function generateSyntheticTests() {
+    const policyDsl = srcEl.value.trim();
+    if (!policyDsl) {
+      alert('Please enter or compile a policy first.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-generate-tests');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Generating &amp; Running...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/synthetic-tests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyDsl })
+      });
+
+      const data = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = '<span>🧪</span> Run Mock Suite';
+
+      if (!data.ok) {
+        alert(data.error);
+        return;
+      }
+
+      let html = `
+        <div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:6px;padding:6px 10px;font-size:9.5px;margin-bottom:8px;">
+          ✓ ${data.syntheticGuarantee}
+        </div>
+        <div class="tests-list">
+      `;
+
+      data.testCases.forEach((tc, idx) => {
+        const badgeCls = tc.expected;
+        html += `
+          <div class="test-case-item">
+            <div class="test-case-top">
+              <span class="test-pwd-code">${tc.password}</span>
+              <span class="test-badge ${badgeCls}">${tc.expected} (${tc.actualValid ? 'VALID' : 'INVALID'})</span>
+            </div>
+            <div style="font-size:10px;color:#334155;">${tc.description}</div>
+            <div class="test-meta">
+              <span>Score: ${tc.score}/14 · ${tc.level}</span>
+              <button class="btn-test-run" onclick="loadTestIntoEvaluator('${tc.password}')">▶ Test in Evaluator</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      document.getElementById('synthetic-tests-wrap').innerHTML = html;
+
+    } catch (e) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🧪</span> Run Mock Suite';
+      showConnectionHelp('Generating synthetic test cases');
+    }
+  }
+
+  function loadTestIntoEvaluator(pwd) {
+    document.getElementById('pw-input').value = pwd;
+    onPwInput();
+    evalPassword();
+  }
+
+  /**
+   * FEATURE 4: Explain Compiler Errors
+   */
+  async function requestErrorExplanation() {
+    // 1. If compiler failed, explain compiler errors
+    if (lastCompilerResult && !lastCompilerResult.success) {
+      try {
+        const res = await fetch(`${API_BASE}/api/ai/explain-error`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            errorData: lastCompilerResult,
+            policyDsl: srcEl.value
+          })
+        });
+
+        const data = await res.json();
+        if (!data.ok) return;
+
+        let html = `
+          <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#dc2626;display:flex;align-items:center;gap:6px;">
+            <span>⚠️</span> Policy Compiler Syntax / Semantic Diagnostics
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+        `;
+        data.explanations.forEach(e => {
+          html += `
+            <div style="background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #ef4444;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#dc2626;">${e.stage.toUpperCase()} ERROR @ Line ${e.line}:${e.col}</div>
+              <div style="font-size:11px;color:#1e293b;line-height:1.4;">${e.explanation}</div>
+              <div style="font-size:10px;color:#059669;margin-top:2px;"><strong>Suggested Fix:</strong> ${e.fix}</div>
+            </div>
+          `;
+        });
+
+        if (data.hasAutoFix) {
+          html += `
+            <button class="btn-primary" style="margin-top:6px;" onclick="applyAutoFix('${btoa(data.suggestedFixDsl)}')">
+              <span>🔧</span> Apply Auto-Fix to Policy
+            </button>
+          `;
+        }
+        html += `</div>`;
+        document.getElementById('explainer-results-wrap').innerHTML = html;
+        return;
+      } catch (e) {
+        showConnectionHelp('Error explainer');
+        return;
+      }
+    }
+
+    // 2. If a tested password failed, explain password evaluation failure
+    if (lastPasswordEval && !lastPasswordEval.evaluation.isValid) {
+      try {
+        const res = await fetch(`${API_BASE}/api/ai/explain-error`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            passwordFailure: {
+              password: lastPasswordEval.password,
+              violations: lastPasswordEval.evaluation.violations || lastPasswordEval.evaluation.reasons,
+              reasons: lastPasswordEval.evaluation.reasons,
+              constraints: lastPasswordEval.constraints
+            },
+            policyDsl: srcEl.value
+          })
+        });
+
+        const data = await res.json();
+        if (data.ok && data.type === 'password_failure') {
+          let html = `
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+              <div style="font-size:12px;font-weight:700;color:#dc2626;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span>✗</span> ${escapeHtml(data.summary)}
+              </div>
+              <div style="font-size:10px;color:#64748b;font-family:'JetBrains Mono',monospace;">
+                Tested Password: <strong style="color:#0f172a;">${escapeHtml(lastPasswordEval.password)}</strong> (${data.passwordLength} chars)
+              </div>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#1e293b;margin-bottom:6px;">Rule Violation Breakdown &amp; Actionable Guidance:</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+          `;
+
+          data.violations.forEach((vItem, idx) => {
+            html += `
+              <div style="background:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #ef4444;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-size:11px;font-weight:700;color:#dc2626;">Rule Violation #${idx + 1}: ${escapeHtml(vItem.violation)}</div>
+                <div style="font-size:10.5px;color:#334155;line-height:1.4;">💡 <strong>How to fix:</strong> ${escapeHtml(vItem.advice)}</div>
+              </div>
+            `;
+          });
+
+          html += `
+            </div>
+            <div style="margin-top:10px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:10px;color:#166534;">
+              ✓ ${escapeHtml(data.generalGuidance)}
+            </div>
+          `;
+
+          document.getElementById('explainer-results-wrap').innerHTML = html;
+          return;
+        }
+      } catch (e) {
+        // Fallback display if fetch fails
+      }
+
+      // Local fallback explanation for password failure
+      const reasons = lastPasswordEval.evaluation.violations || lastPasswordEval.evaluation.reasons || ['Violates policy'];
+      let html = `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;color:#dc2626;">✗ Password Policy Violations (${reasons.length})</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px;font-family:'JetBrains Mono',monospace;">Tested Password: "${escapeHtml(lastPasswordEval.password)}" (${lastPasswordEval.password.length} chars)</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+      `;
+      reasons.forEach(r => {
+        html += `<div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid #ef4444;border-radius:6px;padding:8px 10px;font-size:10.5px;color:#1e293b;"><strong>Violation:</strong> ${escapeHtml(r)}</div>`;
+      });
+      html += `</div>`;
+      document.getElementById('explainer-results-wrap').innerHTML = html;
+      return;
+    }
+
+    // 3. Last compilation succeeded and no failed password
+    document.getElementById('explainer-results-wrap').innerHTML = `
+      <div style="text-align:center;padding:25px 15px;color:#059669;font-size:11px;line-height:1.6;">
+        <div style="font-size:20px;margin-bottom:6px;">✓</div>
+        <strong>No Active Compiler Diagnostics</strong>
+        <div style="color:#64748b;font-size:10px;margin-top:8px;text-align:left;background:#f8fafc;padding:10px;border-radius:6px;border:1px solid #e2e8f0;">
+          <strong>What displays here:</strong><br>
+          • <strong>Compiler Syntax/Semantic Errors:</strong> Enter an invalid rule in the Policy Editor (e.g. <code>requireUppr true</code>) and click Compile.<br>
+          • <strong>Password Evaluation Violations:</strong> Enter a password in the Password Evaluator that fails policy rules and click Evaluate.
+        </div>
+      </div>
+    `;
+  }
+
+  function applyAutoFix(base64Dsl) {
+    const fixed = atob(base64Dsl);
+    srcEl.value = fixed;
+    updateLN();
+    compile();
+  }
+
+  /**
+   * View Generated Target C++ Code
+   */
+  async function viewTargetCode() {
+    try {
+      const res = await fetch(`${API_BASE}/api/generated-code`);
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('target-code-preview').textContent = data.code;
+        document.getElementById('target-code-modal').classList.add('open');
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      showConnectionHelp('Viewing target C++ code');
+    }
+  }
+
+  function closeTargetCodeModal() {
+    document.getElementById('target-code-modal').classList.remove('open');
+  }
+
+  // Initial status check on load
+  async function checkBackendStatus(isUserClick = false) {
+    try {
+      const res = await fetch(`${API_BASE}/api/status`);
+      const data = await res.json();
+      if (data.status === 'online') {
+        isBackendOnline = true;
+        document.getElementById('backend-status-badge').className = 'sys-badge green';
+        document.getElementById('backend-status-badge').innerHTML = '<span>●</span> C++ Backend: Connected';
+        document.getElementById('ai-provider-badge').innerHTML = `<span>✨</span> ${data.aiProvider}`;
+        if (isUserClick) alert('C++ Backend is online and connected!');
+        return true;
+      }
+    } catch (_) {
+      isBackendOnline = false;
+      document.getElementById('backend-status-badge').className = 'sys-badge amber';
+      document.getElementById('backend-status-badge').innerHTML = '<span style="color:#ef4444">●</span> Backend Offline';
+      if (isUserClick) {
+        showConnectionHelp('Connecting to backend');
+      }
+      return false;
+    }
+  }
+
+  checkBackendStatus();
+  loadEx('strong');
+  compile();
+</script>
+</body>
+</html>
